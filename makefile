@@ -20,7 +20,6 @@ commonOps: test.cpp
 	$(CC) $(OPTIONS) $(C11) -o $(EXECUTABLE) test.o 
 	
 clean:
-	rm -f C-98/*.o
-	rm -f C-11/*.o
+	rm -f test.o
 	rm -f $(EXECUTABLE)
 
