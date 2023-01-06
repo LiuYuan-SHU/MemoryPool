@@ -53,17 +53,38 @@
 #include "StackAlloc.h"
 
 /* Adjust these values depending on how much you trust your computer */
+/**
+ * @note 每一次迭代压栈的次数
+ *
+ * 这个值不要设置太大，因为这个测试程序是单线程的，就算计算机的性能很好，
+ * 也会被如此大的计算量搞得计算时间很长
+ */
 #define ELEMS 1000000
+/**
+ * @note REPS = repeats
+ */
 #define REPS 50
 
 int main() {
+  /**
+   * @note 作者在一开始就声明了计时器但没有初始化。
+   *
+   * 可能的一种想法是认为到需要的时候再去声明会浪费额外的时间。
+   * 对汇编底层来说是不存在的问题。所以为了代码的可读性，通常在需要的时候
+   * 再做声明
+   */
   clock_t start;
 
   std::cout << "Copyright (c) 2013 Cosku Acay, http://www.coskuacay.com\n";
   std::cout << "Provided to compare the default allocator to MemoryPool.\n\n";
 
+  /**
+   * @note 压力测试代码
+   *
+   * 主要通过的方法就是，压栈`ELEMS`次，再弹栈`ELEMS`次，循环往复`REPS`次
+   */
   /* Use the default allocator */
-  StackAlloc<int, std::allocator<int> > stackDefault;
+  StackAlloc<int, std::allocator<int>> stackDefault;
   start = clock();
   for (int j = 0; j < REPS; j++) {
     assert(stackDefault.empty());
@@ -86,7 +107,7 @@ int main() {
   std::cout << (((double)clock() - start) / CLOCKS_PER_SEC) << "\n\n";
 
   /* Use MemoryPool */
-  StackAlloc<int, MemoryPool<int> > stackPool;
+  StackAlloc<int, MemoryPool<int>> stackPool;
   start = clock();
   for (int j = 0; j < REPS; j++) {
     assert(stackPool.empty());

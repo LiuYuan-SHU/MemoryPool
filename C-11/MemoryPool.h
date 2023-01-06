@@ -20,11 +20,45 @@
  * IN THE SOFTWARE.
  */
 
+/**
+ * @note 数据结构：
+ *
+ *   block
+ * +--------+ <--+
+ * |前一个块|    |
+ * |的地址指|    |
+ * |针      |    |
+ * +--------+    |
+ * |内存对齐|    |
+ * +--------+    |
+ * |一个个对|    |
+ * |象内存空|    |             +--------+ <--- currentBlock_
+ * |间      |    └─────────────|pointer |
+ * +--------+ <--- lastSlot_   +--------+
+ * |        |                  |********|
+ * | pointer|--------------+   |********|
+ * |        |              |   |********|
+ * +--------+              +-> +--------+ <--- currentSlot_
+ * |********| <--- 已使用      |        |
+ * |********|                  |        |
+ * |********|                  |        |
+ * +--------+                  +--------+
+ *                             |        |
+ *                             |        |
+ *                             |        |
+ *                             +--------+ <--- lastSlot_
+ *                             |        |
+ *                             |        |
+ *                             |        |
+ *                             +--------+
+ */
+
 #ifndef MEMORY_POOL_H
 #define MEMORY_POOL_H
 
 #include <climits>
 #include <cstddef>
+#include <type_traits>
 
 template <typename T, size_t BlockSize = 4096> class MemoryPool {
 public:
@@ -71,6 +105,12 @@ public:
   void deleteElement(pointer p);
 
 private:
+  /**
+   * @note 内嵌指针的一种非常好的实现方式
+   *
+   * 当内存尚未被分配的时候，这片空间的内存存储指向下一个未分配内存的地址
+   * 当内存被分配的时候，这片空间存储对象
+   */
   union Slot_ {
     value_type element;
     Slot_ *next;

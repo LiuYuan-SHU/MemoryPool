@@ -23,6 +23,16 @@
 #ifndef MEMORY_BLOCK_TCC
 #define MEMORY_BLOCK_TCC
 
+/**
+ * @note 内存对齐
+ *
+ * 作者使用每一个块的前8个字节存放指针，指向前一块内存
+ * 这个函数就是为了对齐内存，从而使剩下的内存能够合适得
+ * 存放对象
+ *
+ * @return 指针偏移量，告诉数据应当在一个偏移量之后
+ * 开始存储
+ */
 template <typename T, size_t BlockSize>
 inline typename MemoryPool<T, BlockSize>::size_type
 MemoryPool<T, BlockSize>::padPointer(data_pointer_ p,
@@ -31,6 +41,10 @@ MemoryPool<T, BlockSize>::padPointer(data_pointer_ p,
   return ((align - result) % align);
 }
 
+/**
+ * @note 既然这个类没有任何的虚函数，也不是虚继承，甚至不是派生类
+ *        用`memcpy`显然效果会更好一些
+ */
 template <typename T, size_t BlockSize>
 MemoryPool<T, BlockSize>::MemoryPool() noexcept {
   currentBlock_ = nullptr;
@@ -69,6 +83,9 @@ MemoryPool<T, BlockSize>::operator=(MemoryPool &&memoryPool) noexcept {
   return *this;
 }
 
+/**
+ * @note 作者似乎只在析构函数中释放了没有分配的内存
+ */
 template <typename T, size_t BlockSize>
 MemoryPool<T, BlockSize>::~MemoryPool() noexcept {
   slot_pointer_ curr = currentBlock_;
@@ -94,14 +111,27 @@ MemoryPool<T, BlockSize>::address(const_reference x) const noexcept {
 template <typename T, size_t BlockSize>
 void MemoryPool<T, BlockSize>::allocateBlock() {
   // Allocate space for the new block and store a pointer to the previous one
+  /*
+   * @note newBlock是很大的一片内存，这里用char*(data_pointer_)来记录首地址
+   */
   data_pointer_ newBlock =
       reinterpret_cast<data_pointer_>(operator new(BlockSize));
+  // 在申请的新块中记录当前块的地址
   reinterpret_cast<slot_pointer_>(newBlock)->next = currentBlock_;
+  // 更新当前块指针，使其指向新申请的内存
   currentBlock_ = reinterpret_cast<slot_pointer_>(newBlock);
   // Pad block body to staisfy the alignment requirements for elements
+  /**
+   * @note 真正的数据从newBlock + sizeof(slot_pointer_)开始记录
+   *
+   * 那么之前的地址用来干什么了？用来记录前一个块的地址，方便释放
+   */
   data_pointer_ body = newBlock + sizeof(slot_pointer_);
+  // 计算偏移量
   size_type bodyPadding = padPointer(body, alignof(slot_type_));
+  // 指向能用的第一块内存
   currentSlot_ = reinterpret_cast<slot_pointer_>(body + bodyPadding);
+  // 指向当前块能用的最后一块内存
   lastSlot_ = reinterpret_cast<slot_pointer_>(newBlock + BlockSize -
                                               sizeof(slot_type_) + 1);
 }
@@ -138,6 +168,9 @@ MemoryPool<T, BlockSize>::max_size() const noexcept {
 template <typename T, size_t BlockSize>
 template <class U, class... Args>
 inline void MemoryPool<T, BlockSize>::construct(U *p, Args &&...args) {
+  /**
+   * @note placement new
+   */
   new (p) U(std::forward<Args>(args)...);
 }
 

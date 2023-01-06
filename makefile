@@ -1,6 +1,6 @@
 CC=g++
 EXECUTABLE=MemoryPool
-OPTIONS=-Wall
+OPTIONS=-Wall -std=c++11
 C98=-D_C98
 C11=-D_C11
 
